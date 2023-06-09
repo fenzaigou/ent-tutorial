@@ -252,8 +252,12 @@ func (p *todoPager) applyOrder(query *TodoQuery) *TodoQuery {
 		if o.Field.column == DefaultTodoOrder.Field.column {
 			defaultOrdered = true
 		}
-		if len(query.ctx.Fields) > 0 {
-			query.ctx.AppendFieldOnce(o.Field.column)
+		switch o.Field.column {
+		case TodoOrderFieldParentPriority.column:
+		default:
+			if len(query.ctx.Fields) > 0 {
+				query.ctx.AppendFieldOnce(o.Field.column)
+			}
 		}
 	}
 	if !defaultOrdered {
@@ -267,9 +271,18 @@ func (p *todoPager) applyOrder(query *TodoQuery) *TodoQuery {
 }
 
 func (p *todoPager) orderExpr(query *TodoQuery) sql.Querier {
-	if len(query.ctx.Fields) > 0 {
-		for _, o := range p.order {
-			query.ctx.AppendFieldOnce(o.Field.column)
+	for _, o := range p.order {
+		switch o.Field.column {
+		case TodoOrderFieldParentPriority.column:
+			direction := o.Direction
+			if p.reverse {
+				direction = direction.Reverse()
+			}
+			query = query.Order(o.Field.toTerm(direction.OrderTermOption()))
+		default:
+			if len(query.ctx.Fields) > 0 {
+				query.ctx.AppendFieldOnce(o.Field.column)
+			}
 		}
 	}
 	return sql.ExprFunc(func(b *sql.Builder) {
@@ -398,6 +411,26 @@ var (
 			}
 		},
 	}
+	// TodoOrderFieldParentPriority orders by PARENT_PRIORITY.
+	TodoOrderFieldParentPriority = &TodoOrderField{
+		Value: func(t *Todo) (ent.Value, error) {
+			return t.Value("parent_priority")
+		},
+		column: "parent_priority",
+		toTerm: func(opts ...sql.OrderTermOption) todo.OrderOption {
+			return todo.ByParentField(
+				todo.FieldPriority,
+				append(opts, sql.OrderSelectAs("parent_priority"))...,
+			)
+		},
+		toCursor: func(t *Todo) Cursor {
+			cv, _ := t.Value("parent_priority")
+			return Cursor{
+				ID:    t.ID,
+				Value: cv,
+			}
+		},
+	}
 )
 
 // String implement fmt.Stringer interface.
@@ -412,6 +445,8 @@ func (f TodoOrderField) String() string {
 		str = "STATUS"
 	case TodoOrderFieldPriority.column:
 		str = "PRIORITY"
+	case TodoOrderFieldParentPriority.column:
+		str = "PARENT_PRIORITY"
 	}
 	return str
 }
@@ -436,6 +471,8 @@ func (f *TodoOrderField) UnmarshalGQL(v interface{}) error {
 		*f = *TodoOrderFieldStatus
 	case "PRIORITY":
 		*f = *TodoOrderFieldPriority
+	case "PARENT_PRIORITY":
+		*f = *TodoOrderFieldParentPriority
 	default:
 		return fmt.Errorf("%s is not a valid TodoOrderField", str)
 	}

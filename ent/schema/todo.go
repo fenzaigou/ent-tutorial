@@ -46,9 +46,12 @@ func (Todo) Fields() []ent.Field {
 // Edges of the Todo.
 func (Todo) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("parent", Todo.Type).
-			Unique().
-			From("children"),
+		edge.To("children", Todo.Type).
+			From("parent").
+			Annotations(
+				entgql.OrderField("PARENT_PRIORITY"),
+			).
+			Unique(),
 	}
 }
 

@@ -32,6 +32,16 @@ func (t *TodoQuery) collectField(ctx context.Context, opCtx *graphql.OperationCo
 	)
 	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
 		switch field.Name {
+		case "parent":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TodoClient{config: t.config}).Query()
+			)
+			if err := query.collectField(ctx, opCtx, field, path, mayAddCondition(satisfies, todoImplementors)...); err != nil {
+				return err
+			}
+			t.withParent = query
 		case "children":
 			var (
 				alias = field.Alias
@@ -44,16 +54,6 @@ func (t *TodoQuery) collectField(ctx context.Context, opCtx *graphql.OperationCo
 			t.WithNamedChildren(alias, func(wq *TodoQuery) {
 				*wq = *query
 			})
-		case "parent":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&TodoClient{config: t.config}).Query()
-			)
-			if err := query.collectField(ctx, opCtx, field, path, mayAddCondition(satisfies, todoImplementors)...); err != nil {
-				return err
-			}
-			t.withParent = query
 		case "text":
 			if _, ok := fieldSeen[todo.FieldText]; !ok {
 				selectedFields = append(selectedFields, todo.FieldText)

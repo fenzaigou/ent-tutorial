@@ -9,8 +9,8 @@ input CreateTodoInput {
   createdAt: Time
   status: TodoStatus
   priority: Int
-  childIDs: [ID!]
   parentID: ID
+  childIDs: [ID!]
 }
 """
 Define a Relay Cursor type:
@@ -82,8 +82,8 @@ type Todo implements Node {
   createdAt: Time!
   status: TodoStatus!
   priority: Int!
-  children: [Todo!]
   parent: Todo
+  children: [Todo!]
 }
 """A connection to a list of items."""
 type TodoConnection {
@@ -114,6 +114,7 @@ enum TodoOrderField {
   CREATED_AT
   STATUS
   PRIORITY
+  PARENT_PRIORITY
 }
 """TodoStatus is enum for the field status"""
 enum TodoStatus @goModel(model: "todo/ent/todo.Status") {
