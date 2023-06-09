@@ -22,8 +22,12 @@ func (r *queryResolver) Nodes(ctx context.Context, ids []int) ([]ent.Noder, erro
 }
 
 // Todos is the resolver for the todos field.
-func (r *queryResolver) Todos(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TodoOrder) (*ent.TodoConnection, error) {
-	return r.client.Debug().Todo.Query().Paginate(ctx, after, first, before, last, ent.WithTodoOrder(orderBy))
+func (r *queryResolver) Todos(ctx context.Context, after *entgql.Cursor[int], first *int, before *entgql.Cursor[int], last *int, orderBy []*ent.TodoOrder, where *ent.TodoWhereInput) (*ent.TodoConnection, error) {
+	return r.client.Debug().Todo.Query().
+		Paginate(ctx, after, first, before, last,
+			ent.WithTodoOrder(orderBy),
+			ent.WithTodoFilter(where.Filter),
+		)
 }
 
 // Query returns QueryResolver implementation.
@@ -32,5 +36,9 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // CreateTodoInput returns CreateTodoInputResolver implementation.
 func (r *Resolver) CreateTodoInput() CreateTodoInputResolver { return &createTodoInputResolver{r} }
 
+// TodoWhereInput returns TodoWhereInputResolver implementation.
+func (r *Resolver) TodoWhereInput() TodoWhereInputResolver { return &todoWhereInputResolver{r} }
+
 type queryResolver struct{ *Resolver }
 type createTodoInputResolver struct{ *Resolver }
+type todoWhereInputResolver struct{ *Resolver }

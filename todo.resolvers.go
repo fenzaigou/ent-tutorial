@@ -7,6 +7,7 @@ package todo
 import (
 	"context"
 	"todo/ent"
+	"todo/ent/todo"
 )
 
 // CreateTodo is the resolver for the createTodo field.
@@ -22,6 +23,20 @@ func (r *mutationResolver) UpdateTodo(ctx context.Context, id int, input ent.Upd
 	// panic(fmt.Errorf("not implemented: UpdateTodo - updateTodo"))
 
 	return ent.FromContext(ctx).Todo.UpdateOneID(id).SetInput(input).Save(ctx)
+}
+
+// IsCompleted is the resolver for the isCompleted field.
+func (r *todoWhereInputResolver) IsCompleted(ctx context.Context, obj *ent.TodoWhereInput, data *bool) error {
+	// panic(fmt.Errorf("not implemented: IsCompleted - isCompleted"))
+	if obj == nil || data == nil {
+		return nil
+	}
+	if *data {
+		obj.AddPredicates(todo.StatusEQ(todo.StatusCompleted))
+	} else {
+		obj.AddPredicates(todo.StatusNEQ(todo.StatusCompleted))
+	}
+	return nil
 }
 
 // Mutation returns MutationResolver implementation.
